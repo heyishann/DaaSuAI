@@ -1,0 +1,787 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CrewAI SQL Generator - Natural Language to SQL</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            height: 100vh;
+            overflow: hidden;
+        }
+        
+        .container {
+            display: flex;
+            height: 100vh;
+            max-width: 1400px;
+            margin: 0 auto;
+            background: white;
+            box-shadow: 0 0 20px rgba(0,0,0,0.1);
+        }
+        
+        .sidebar {
+            width: 300px;
+            background: #2c3e50;
+            color: white;
+            padding: 20px;
+            overflow-y: auto;
+        }
+        
+        .main-content {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .header {
+            background: #34495e;
+            color: white;
+            padding: 20px;
+            text-align: center;
+        }
+        
+        .chat-container {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+        
+        .messages {
+            flex: 1;
+            overflow-y: auto;
+            padding: 20px;
+            background: #ecf0f1;
+        }
+        
+        .message {
+            margin-bottom: 20px;
+            padding: 15px;
+            border-radius: 10px;
+            max-width: 80%;
+        }
+        
+        .user-message {
+            background: #3498db;
+            color: white;
+            margin-left: auto;
+        }
+        
+        .bot-message {
+            background: white;
+            border: 1px solid #bdc3c7;
+        }
+        
+        .input-area {
+            background: white;
+            padding: 20px;
+            border-top: 1px solid #bdc3c7;
+        }
+        
+        .input-form {
+            display: flex;
+            gap: 10px;
+        }
+        
+        .business-id-input {
+            width: 200px;
+            padding: 12px;
+            border: 1px solid #bdc3c7;
+            border-radius: 5px;
+            font-size: 14px;
+        }
+        
+        .query-input {
+            flex: 1;
+            padding: 12px;
+            border: 1px solid #bdc3c7;
+            border-radius: 5px;
+            font-size: 14px;
+        }
+        
+        .send-button {
+            padding: 12px 24px;
+            background: #27ae60;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+        
+        .send-button:hover {
+            background: #2ecc71;
+        }
+        
+        .send-button:disabled {
+            background: #95a5a6;
+            cursor: not-allowed;
+        }
+        
+        .loading {
+            display: none;
+            text-align: center;
+            padding: 20px;
+            color: #7f8c8d;
+        }
+        
+        .status {
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 5px;
+            font-size: 12px;
+        }
+        
+        .status.success {
+            background: #d5f4e6;
+            color: #27ae60;
+            border: 1px solid #27ae60;
+        }
+        
+        .status.error {
+            background: #fdeaea;
+            color: #e74c3c;
+            border: 1px solid #e74c3c;
+        }
+        
+        .sql-query {
+            background: #2c3e50;
+            color: #ecf0f1;
+            padding: 15px;
+            border-radius: 5px;
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+            overflow-x: auto;
+            margin: 10px 0;
+        }
+        
+        .data-table {
+            overflow-x: auto;
+            margin: 15px 0;
+        }
+        
+        .data-table table {
+            width: 100%;
+            border-collapse: collapse;
+            background: white;
+        }
+        
+        .data-table th,
+        .data-table td {
+            padding: 8px 12px;
+            text-align: left;
+            border-bottom: 1px solid #ddd;
+        }
+        
+        .data-table th {
+            background: #f8f9fa;
+            font-weight: bold;
+        }
+        
+        .visualization {
+            margin: 15px 0;
+            padding: 15px;
+            background: white;
+            border-radius: 5px;
+            border: 1px solid #ddd;
+        }
+        
+        .sample-queries {
+            margin-top: 20px;
+        }
+        
+        .sample-query {
+            background: #34495e;
+            color: white;
+            padding: 10px;
+            margin: 5px 0;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 12px;
+        }
+        
+        .sample-query:hover {
+            background: #4a6741;
+        }
+        
+        .metrics {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 10px;
+            margin: 15px 0;
+        }
+        
+        .metric {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 5px;
+            text-align: center;
+            border: 1px solid #dee2e6;
+        }
+        
+        .metric-value {
+            font-size: 24px;
+            font-weight: bold;
+            color: #2c3e50;
+        }
+        
+        .metric-label {
+            font-size: 12px;
+            color: #6c757d;
+            margin-top: 5px;
+        }
+        
+        @keyframes slideIn {
+            from {
+                transform: translateX(100%);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+        
+        @keyframes slideOut {
+            from {
+                transform: translateX(0);
+                opacity: 1;
+            }
+            to {
+                transform: translateX(100%);
+                opacity: 0;
+            }
+        }
+        
+        .sql-query pre {
+            background: #1a1a1a;
+            color: #f8f8f2;
+            padding: 15px;
+            border-radius: 5px;
+            font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+            font-size: 13px;
+            line-height: 1.5;
+            overflow-x: auto;
+        }
+        
+        .copy-btn {
+            transition: all 0.2s ease;
+        }
+        
+        .copy-btn:hover {
+            background: #2ecc71 !important;
+            transform: scale(1.05);
+        }
+        
+        .copy-btn:active {
+            transform: scale(0.95);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="sidebar">
+            <h3>CrewAI SQL Generator</h3>
+            <p style="margin: 15px 0; font-size: 14px; color: #bdc3c7;">
+                Ask questions about your business data in natural language.
+            </p>
+            
+            <div class="status" id="connectionStatus">
+                <div> Checking connection...</div>
+            </div>
+            
+            <div class="sample-queries">
+                <h4>Sample Queries:</h4>
+                <div class="sample-query" onclick="useQuery('Show me top performing employees this month')">
+                    Show me top performing employees this month
+                </div>
+                <div class="sample-query" onclick="useQuery('What is our revenue trend over the last 6 months?')">
+                    What is our revenue trend over the last 6 months?
+                </div>
+                <div class="sample-query" onclick="useQuery('Which services are most popular?')">
+                    Which services are most popular?
+                </div>
+                <div class="sample-query" onclick="useQuery('Show customer retention rates')">
+                    Show customer retention rates
+                </div>
+                <div class="sample-query" onclick="useQuery('List upcoming appointments for today')">
+                    List upcoming appointments for today
+                </div>
+            </div>
+        </div>
+        
+        <div class="main-content">
+            <div class="header">
+                <h1>Natural Language SQL Query Interface</h1>
+                <p>Powered by CrewAI Agents with MySQL MCP</p>
+            </div>
+            
+            <div class="chat-container">
+                <div class="messages" id="messages">
+                    <div class="message bot-message">
+                        <strong> SQL Generator Assistant</strong>
+                        <p>Hello! I can help you query your business data using natural language. Just enter your business ID and ask me anything about your data!</p>
+                        <p><em>Examples: "Show me revenue for last month", "Who are my top employees?", "What services are most booked?"</em></p>
+                    </div>
+                </div>
+                
+                <div class="loading" id="loading">
+                    <div> Processing your query through CrewAI agents...</div>
+                    <div style="font-size: 12px; margin-top: 5px;">
+                        Generating SQL -> Validating -> Executing -> Creating Visualizations
+                    </div>
+                </div>
+                
+                <div class="input-area">
+                    <form class="input-form" id="queryForm">
+                        <input 
+                            type="text" 
+                            class="business-id-input" 
+                            id="businessId" 
+                            placeholder="Business ID" 
+                            value="530cfe32-b989-4fb0-b054-f884b601098d"
+                            required
+                        >
+                        <input 
+                            type="text" 
+                            class="query-input" 
+                            id="queryInput" 
+                            placeholder="Ask about your business data..." 
+                            required
+                        >
+                        <button type="submit" class="send-button" id="sendButton">
+                            Send
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Global variables
+        let isProcessing = false;
+
+        // DOM elements
+        const messagesContainer = document.getElementById('messages');
+        const queryForm = document.getElementById('queryForm');
+        const queryInput = document.getElementById('queryInput');
+        const businessIdInput = document.getElementById('businessId');
+        const sendButton = document.getElementById('sendButton');
+        const loading = document.getElementById('loading');
+        const connectionStatus = document.getElementById('connectionStatus');
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', function() {
+            checkSystemStatus();
+            queryInput.focus();
+        });
+
+        // Form submission
+        queryForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+            if (!isProcessing) {
+                sendQuery();
+            }
+        });
+
+        // Check system status
+        async function checkSystemStatus() {
+            try {
+                const response = await fetch('/api/status');
+                const status = await response.json();
+                
+                if (status.validation.is_valid) {
+                    connectionStatus.className = 'status success';
+                    connectionStatus.innerHTML = ' All systems operational';
+                } else {
+                    connectionStatus.className = 'status error';
+                    connectionStatus.innerHTML = ' Running in demo mode';
+                }
+            } catch (error) {
+                connectionStatus.className = 'status error';
+                connectionStatus.innerHTML = ' Connection error';
+            }
+        }
+
+        // Use sample query
+        function useQuery(query) {
+            queryInput.value = query;
+            queryInput.focus();
+        }
+
+        // Send query
+        async function sendQuery() {
+            const query = queryInput.value.trim();
+            const businessId = businessIdInput.value.trim();
+
+            if (!query || !businessId) {
+                alert('Please enter both business ID and query');
+                return;
+            }
+
+            // Show user message
+            addMessage('user', query);
+
+            // Add chat loader message
+            addChatLoader();
+
+            // Clear input and show loading
+            queryInput.value = '';
+            setLoading(true);
+        // Add chat loader message
+        function addChatLoader() {
+            // Remove any existing loader message
+            const oldLoader = document.getElementById('chatLoaderMsg');
+            if (oldLoader) {
+                oldLoader.remove();
+            }
+            const loaderDiv = document.createElement('div');
+            loaderDiv.className = 'message bot-message';
+            loaderDiv.id = 'chatLoaderMsg';
+            loaderDiv.innerHTML = `
+                <div style="display: flex; align-items: center; gap: 10px;">
+                    <span class="chat-spinner" style="width: 22px; height: 22px; display: inline-block;">
+                        <svg width="22" height="22" viewBox="0 0 22 22" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <circle cx="11" cy="11" r="9" stroke="#3498db" stroke-width="4" stroke-linecap="round" stroke-dasharray="56" stroke-dashoffset="0">
+                                <animateTransform attributeName="transform" type="rotate" from="0 11 11" to="360 11 11" dur="0.8s" repeatCount="indefinite"/>
+                            </circle>
+                        </svg>
+                    </span>
+                    <span>Processing your query...</span>
+                </div>
+            `;
+            addMessageElement(loaderDiv);
+        }
+
+            try {
+                const response = await fetch('/api/query', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        query: query,
+                        business_id: businessId
+                    })
+                });
+
+                const result = await response.json();
+                
+                if (result.success) {
+                    displaySuccessResult(result);
+                } else {
+                    displayErrorResult(result);
+                }
+
+            } catch (error) {
+                displayErrorResult({
+                    error: `Network error: ${error.message}`
+                });
+            }
+
+            setLoading(false);
+        }
+
+        // Display successful result
+        function displaySuccessResult(result) {
+            console.log(result)
+            const messageDiv = document.createElement('div');
+            messageDiv.className = 'message bot-message';
+            
+            // Store SQL in a data attribute for safe access
+            const sqlQueryId = `sql-${Date.now()}`;
+            window[sqlQueryId] = result.sql_query;
+            
+            let html = `
+                <strong> Query Results</strong>`;
+            
+            // Show feedback loop information if used
+            // if (result.pipeline_steps && result.pipeline_steps.query_generation && 
+            //     result.pipeline_steps.query_generation.feedback_used) {
+            //     const attempts = result.pipeline_steps.query_generation.attempts.length;
+            //     html += `
+            //     <div style="background: #e8f5e8; border: 1px solid #27ae60; padding: 10px; margin: 10px 0; border-radius: 5px; font-size: 12px;">
+            //         <strong> Query Improvement:</strong> Query was refined ${attempts} times using validator feedback for better performance and accuracy.
+            //     </div>`;
+            // }
+                
+            // html += `
+            //     <div class="sql-query" style="position: relative;">
+            //         <strong>Generated SQL:</strong>
+            //         <button class="copy-btn" id="copy-${sqlQueryId}"
+            //                 style="position: absolute; right: 10px; top: 5px; 
+            //                        background: #27ae60; color: white; border: none; 
+            //                        padding: 5px 10px; border-radius: 3px; cursor: pointer;
+            //                        font-size: 12px;">
+            //              Copy SQL
+            //         </button>
+            //         <br>
+            //         <pre style="margin-top: 10px;">${escapeHtml(result.sql_query)}</pre>
+            //     </div>
+            // `;
+
+            // // Add metrics
+            // if (result.row_count !== undefined) {
+            //     html += `
+            //         <div class="metrics">
+            //             <div class="metric">
+            //                 <div class="metric-value">${result.row_count}</div>
+            //                 <div class="metric-label">Rows Returned</div>
+            //             </div>
+            //             <div class="metric">
+            //                 <div class="metric-value">${result.execution_time?.toFixed(2) || 'N/A'}</div>
+            //                 <div class="metric-label">Execution Time (s)</div>
+            //             </div>
+            //             <div class="metric">
+            //                 <div class="metric-value">${result.validation_info?.confidence_score ? (result.validation_info.confidence_score * 100).toFixed(0) + '%' : 'N/A'}</div>
+            //                 <div class="metric-label">Confidence</div>
+            //             </div>
+            //         </div>
+            //     `;
+            // }
+
+            // Add data table
+            if (result.data && result.data.length > 0) {
+                html += '<div class="data-table">';
+                html += '<table>';
+                
+                // Header
+                html += '<thead><tr>';
+                result.columns.forEach(col => {
+                    html += `<th>${escapeHtml(col)}</th>`;
+                });
+                html += '</tr></thead>';
+                
+                // Data (limit to first 10 rows for display)
+                html += '<tbody>';
+                const displayRows = result.data.slice(0, 10);
+                displayRows.forEach(row => {
+                    html += '<tr>';
+                    row.forEach(cell => {
+                        html += `<td>${escapeHtml(String(cell))}</td>`;
+                    });
+                    html += '</tr>';
+                });
+                html += '</tbody>';
+                html += '</table>';
+                
+                if (result.data.length > 10) {
+                    html += `<p style="text-align: center; margin-top: 10px; color: #666;">
+                        Showing first 10 of ${result.row_count} rows
+                    </p>`;
+                }
+                
+                html += '</div>';
+            }
+
+
+            // Add visualization
+            if (result.visualizations && result.visualizations.length > 0) {
+                result.visualizations.forEach((viz, index) => {
+                    const uniqueId = `chart-${Date.now()}-${index}`;
+                    html += `<div class="visualization" id="viz-${uniqueId}">`;
+                    html += `<h4> ${viz.config?.title || 'Data Visualization'}</h4>`;
+                    if (viz.type === 'table') {
+                        html += viz.data;
+                    } else if (viz.data.startsWith("data:image")) {
+                        html += `<img src="${viz.data}" alt="${viz.config?.title || 'Chart'}" style="max-width:100%; height:auto;" />`;
+                    } else {
+                        html += `<div id="${uniqueId}" style="height: 400px;"></div>`;
+                        setTimeout(() => {
+                            try {
+                                const chartData = JSON.parse(viz.data);
+                                Plotly.newPlot(uniqueId, chartData.data, chartData.layout);
+                            } catch (e) {
+                                console.error('Error rendering chart:', e);
+                            }
+                        }, 100);
+                    }
+                    html += `<p style="margin-top: 10px; font-size: 12px; color: #666;">${viz.summary}</p>`;
+                    html += '</div>';
+                });
+            }
+
+
+            // Add narrative insights
+            if (result.pipeline_steps?.insights_generation?.insights) {
+                html += `<div style="margin-top: 15px; padding: 10px; background: #fffbe6; border-radius: 5px; border: 1px solid #ffe58f;">
+                    <strong> Insights:</strong><br>
+                    <span style="font-size: 15px; color: #7c6f00;">
+                        ${escapeHtml(result.pipeline_steps.insights_generation.insights)}
+                    </span>
+                </div>`;
+            }
+
+            // Add recommendations
+            if (result.pipeline_steps.recommendations_generation && result.pipeline_steps.recommendations_generation.recommendations) {
+                html += `<div style="margin-top: 15px; padding: 10px; background: #e6f7ff; border-radius: 5px; border: 1px solid #91d5ff;">
+                    <strong> Recommendations:</strong><br>
+                    <span style="font-size: 15px; color: #0050b3;">${escapeHtml(result.pipeline_steps.recommendations_generation.recommendations)}</span>
+                </div>`;
+            }
+
+            // Add formatted summary
+            if (result.formatted_summary) {
+                html += `<div style="margin-top: 15px; padding: 10px; background: #f8f9fa; border-radius: 5px;">
+                    <strong> Summary:</strong><br>
+                    ${escapeHtml(result.formatted_summary)}
+                </div>`;
+            }
+
+            // Remove chat loader message if present
+            const oldLoader = document.getElementById('chatLoaderMsg');
+            if (oldLoader) {
+                oldLoader.remove();
+            }
+            messageDiv.innerHTML = html;
+            addMessageElement(messageDiv);
+            setLoading(false);
+            
+            // Attach click event to copy button after element is added to DOM
+            setTimeout(() => {
+                const copyBtn = document.getElementById(`copy-${sqlQueryId}`);
+                if (copyBtn) {
+                    copyBtn.addEventListener('click', () => {
+                        copySQL(window[sqlQueryId]);
+                    });
+                }
+            }, 10);
+        }
+
+        // Display error result
+        function displayErrorResult(result) {
+            const messageDiv = document.createElement('div');
+            messageDiv.className = 'message bot-message';
+            
+            messageDiv.innerHTML = `
+                <strong> Error</strong>
+                <div class="status error">
+                    ${escapeHtml(result.error || 'Unknown error occurred')}
+                </div>
+            `;
+            
+            // Remove chat loader message if present
+            const oldLoader = document.getElementById('chatLoaderMsg');
+            if (oldLoader) {
+                oldLoader.remove();
+            }
+            addMessageElement(messageDiv);
+            setLoading(false);
+        }
+
+        // Add message to chat
+        function addMessage(type, content) {
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `message ${type}-message`;
+            
+            if (type === 'user') {
+                messageDiv.innerHTML = `<strong>You:</strong><p>${escapeHtml(content)}</p>`;
+            }
+            
+            addMessageElement(messageDiv);
+        }
+
+        // Add message element and scroll
+        function addMessageElement(element) {
+            messagesContainer.appendChild(element);
+            messagesContainer.scrollTop = messagesContainer.scrollHeight;
+        }
+
+        // Set loading state
+        function setLoading(isLoading) {
+            isProcessing = isLoading;
+            loading.style.display = isLoading ? 'block' : 'none';
+            sendButton.disabled = isLoading;
+            sendButton.textContent = isLoading ? 'Processing...' : 'Send';
+        }
+
+        // Escape HTML
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+        
+        // Copy SQL to clipboard
+        function copySQL(sql) {
+            // Unescape the SQL query
+            const textarea = document.createElement('textarea');
+            textarea.innerHTML = sql;
+            const decodedSQL = textarea.value;
+            
+            // Copy to clipboard
+            if (navigator.clipboard && window.isSecureContext) {
+                navigator.clipboard.writeText(decodedSQL).then(() => {
+                    showCopyNotification('SQL query copied to clipboard!');
+                }).catch(err => {
+                    console.error('Failed to copy: ', err);
+                    fallbackCopyToClipboard(decodedSQL);
+                });
+            } else {
+                fallbackCopyToClipboard(decodedSQL);
+            }
+        }
+        
+        // Fallback copy method for older browsers
+        function fallbackCopyToClipboard(text) {
+            const textArea = document.createElement("textarea");
+            textArea.value = text;
+            textArea.style.position = "fixed";
+            textArea.style.left = "-999999px";
+            document.body.appendChild(textArea);
+            textArea.focus();
+            textArea.select();
+            
+            try {
+                document.execCommand('copy');
+                showCopyNotification('SQL query copied to clipboard!');
+            } catch (err) {
+                showCopyNotification('Failed to copy SQL query', true);
+            }
+            
+            document.body.removeChild(textArea);
+        }
+        
+        // Show copy notification
+        function showCopyNotification(message, isError = false) {
+            const notification = document.createElement('div');
+            notification.style.cssText = `
+                position: fixed;
+                top: 20px;
+                right: 20px;
+                padding: 10px 20px;
+                background: ${isError ? '#e74c3c' : '#27ae60'};
+                color: white;
+                border-radius: 5px;
+                z-index: 10000;
+                animation: slideIn 0.3s ease;
+            `;
+            notification.textContent = message;
+            document.body.appendChild(notification);
+            
+            setTimeout(() => {
+                notification.style.animation = 'slideOut 0.3s ease';
+                setTimeout(() => {
+                    document.body.removeChild(notification);
+                }, 300);
+            }, 2000);
+        }
+
+        // Auto-resize functionality
+        window.addEventListener('resize', function() {
+            // Handle any chart resizing if needed
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,38 @@
+# CrewAI SQL Generator Requirements
+
+# Core frameworks
+crewai>=0.41.0
+fastapi>=0.104.1
+uvicorn[standard]>=0.24.0
+
+# Database and MCP
+psycopg2-binary>=2.9.7
+mcp>=0.7.0
+asyncpg>=0.29.0
+
+# Visualization
+plotly>=5.17.0
+matplotlib>=3.8.0
+seaborn>=0.13.0
+pandas>=2.1.0
+
+# Web framework
+jinja2>=3.1.2
+python-multipart>=0.0.6
+
+# AI/ML
+openai>=1.3.0
+pydantic>=2.5.0
+pydantic-settings>=2.1.0
+
+# Utilities
+python-dotenv>=1.0.0
+loguru>=0.7.2
+aiofiles>=23.2.1
+sqlparse>=0.4.4
+
+# Development
+pytest>=7.4.0
+pytest-asyncio>=0.21.0
+black>=23.10.0
+flake8>=6.1.0
