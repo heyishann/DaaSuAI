@@ -349,7 +349,7 @@
                             class="business-id-input" 
                             id="businessId" 
                             placeholder="Business ID" 
-                            value="530cfe32-b989-4fb0-b054-f884b601098d"
+                            value="46b1b99c-6930-4a77-bff7-b75440ef17ef"
                             required
                         >
                         <input 
@@ -632,12 +632,12 @@
             }
 
             // Add formatted summary
-            if (result.formatted_summary) {
-                html += `<div style="margin-top: 15px; padding: 10px; background: #f8f9fa; border-radius: 5px;">
-                    <strong> Summary:</strong><br>
-                    ${escapeHtml(result.formatted_summary)}
-                </div>`;
-            }
+            // if (result.formatted_summary) {
+            //     html += `<div style="margin-top: 15px; padding: 10px; background: #f8f9fa; border-radius: 5px;">
+            //         <strong> Summary:</strong><br>
+            //         ${escapeHtml(result.formatted_summary)}
+            //     </div>`;
+            // }
 
             // Remove chat loader message if present
             const oldLoader = document.getElementById('chatLoaderMsg');

@@ -2,7 +2,7 @@
 
 ## System Role
 
-You are an expert SQL query generator for a construction/project management system. Generate optimized MySQL queries based on natural language descriptions.
+You are an expert SQL query generator for a project management system. Generate optimized MySQL queries based on natural language descriptions. You are Database administrator carefully analyze and remeber the database schema provided to you, and then make query carefully.
 
 ## Critical Rules for Query Generation
 
@@ -96,7 +96,7 @@ FLOAT =\> F
 
 ---
 
-## user - System users (employees, managers, etc.)
+## user - System users 
 
 ### Columns
 
@@ -161,10 +161,9 @@ FLOAT =\> F
 
 | id              | name       |
 | :-------------- | :--------- |
-| role-admin      | Admin      |
-| role-manager    | Manager    |
-| role-supervisor | Supervisor |
-| role-ca         | CA         |
+| 329jd-32w9s-93bdj-282y1hs2     | Admin      |
+| 28201nd-8d92n-28nd0-027db3    | Manager    |
+| 28d839-d82gd-83yslq-28d12 | Supervisor |
 
 ---
 
@@ -432,7 +431,7 @@ FLOAT =\> F
 
 | id     | task_id  | user_id         | assigned_by | created_by | created_at          | updated_by | updated_at          | is_active | is_deleted |
 | :----- | :------- | :-------------- | :---------- | :--------- | :------------------ | :--------- | :------------------ | :-------- | :--------- |
-| ta-123 | task-123 | user-supervisor | user-789    | user-789   | 2024-01-30 10:00:00 | user-789   | 2024-01-30 10:00:00 | 1         | 0          |
+| 273yh-7327292j-73hedb32-172h | 36272hkf-373yb-376edj | shdvd82-dh3y28d-2uwd82 | 2729ed-udu287-dh22e-382j    | user-789   | 2024-01-30 10:00:00 | user-789   | 2024-01-30 10:00:00 | 1         | 0          |
 
 ---
 
@@ -466,7 +465,6 @@ FLOAT =\> F
 - id - V36 - PK
 - user_id - V36 - REF user(id)
 - organization_id - V36 - REF organization(id)
-- date - D
 - check_in - DT
 - check_in_latitude - DECIMAL(10,6)
 - check_in_longitude - DECIMAL(10,6)
@@ -482,9 +480,11 @@ FLOAT =\> F
 
 ### Sample Data
 
-| id     | user_id         | organization_id | date       | check_in            | check_out           | created_at          | created_by      | updated_at          | updated_by      | is_active | is_deleted |
+| id     | user_id         | organization_id | check_in            | check_out           | created_at          | created_by      | updated_at          | updated_by      | is_active | is_deleted |
 | :----- | :-------------- | :-------------- | :--------- | :------------------ | :------------------ | :------------------ | :-------------- | :------------------ | :-------------- | :-------- | :--------- |
-| ua-123 | user-supervisor | org-123-456     | 2024-01-30 | 2024-01-30 08:00:00 | 2024-01-30 17:00:00 | 2024-01-30 08:00:00 | user-supervisor | 2024-01-30 17:00:00 | user-supervisor | 1         | 0          |
+| ua-123 | user-supervisor | org-123-456     | 2024-01-30 08:00:00 | 2024-01-30 17:00:00 | 2024-01-30 08:00:00 | user-supervisor | 2024-01-30 17:00:00 | user-supervisor | 1         | 0          |
+
+
 
 ---
 
@@ -585,7 +585,7 @@ FLOAT =\> F
 
 | id      | organization_id | invited_to_user_id | invited_by_user_id | role_id         | group_id | status  | created_by | created_at          | is_active | is_deleted |
 | :------ | :-------------- | :----------------- | :----------------- | :-------------- | :------- | :------ | :--------- | :------------------ | :-------- | :--------- |
-| inv-123 | org-123-456     | user-new-456       | user-789           | role-supervisor | grp-abc  | Pending | user-789   | 2025-09-10 11:10:00 | 1         | 0          |
+| 722bj2z-d732-82199-bjj2-y70212 | 46b1b99c-6930-4a77-bff7-b75440ef17ef     | user-new-456       | user-789           | role-supervisor | grp-abc  | Pending | user-789   | 2025-09-10 11:10:00 | 1         | 0          |
 
 ---
 
@@ -608,7 +608,7 @@ FLOAT =\> F
 
 | id         | organization_id | vendor_id  | note                        | created_by | created_at          | is_active | is_deleted |
 | :--------- | :-------------- | :--------- | :-------------------------- | :--------- | :------------------ | :-------- | :--------- |
-| my-ven-789 | org-123-456     | vendor-456 | Primary supplier for steel. | user-789   | 2025-02-01 10:00:00 | 1         | 0          |
+| 2b3682b0-93123-82e53-2y3-17cad85d4ecc  |  46b1b99c-6930-4a77-bff7-b75440ef17ef  | 2dd350f1-9863-48e5-92d6-17cad85d4ecc | Primary supplier for steel. | user-789   | 2025-02-01 10:00:00 | 1         | 0          |
 
 ---
 
@@ -1145,7 +1145,7 @@ FLOAT =\> F
 
 | id    | vendor_id  | device_type | notification_token | created_at          | is_active | is_deleted |
 | :---- | :--------- | :---------- | :----------------- | :------------------ | :-------- | :--------- |
-| vdt-1 | vendor-456 | 1           | f4hG\_...\_H9jU    | 2025-01-10 09:05:00 | 1         | 0          |
+| 284tbf-332lk-23ek3-32ws | 483y3h-8392ddjv-322-d221 | 1           | f4hG\_...\_H9jU    | 2025-01-10 09:05:00 | 1         | 0          |
 
 ---
 
@@ -1542,12 +1542,9 @@ Respond in JSON format:
 
 JSON object with SQL query, expected columns, explanation, and complexity score
 
-## Usage Context
-
-Used in `_generate_sql_query()` method for dynamic query generation
 
 ## System Message
 
 ```
-You are an expert SQL query generator specializing in construction/project management analytics queries. Always respond with valid JSON.
+You are an expert SQL query generator specializing in project management analytics queries. Always respond with valid JSON. Carefully analyze and remeber the schema of the database use only that tables and columns which are listed in the db. There are many columns such as "user", "user_attendance", "user_organization" and "project", "project_user" carefully see what table should be used. Use column only if column is available in that table.
 ```

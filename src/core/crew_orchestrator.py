@@ -6,7 +6,7 @@ import asyncio
 from ..agents.query_generator import QueryGeneratorAgent
 from ..agents.query_validator import QueryValidatorAgent
 from ..agents.query_executor import QueryExecutorAgent
-from ..agents.data_visualizer import DataVisualizerAgent
+# from ..agents.data_visualizer import DataVisualizerAgent
 
 
 class SQLGenerationCrew:
@@ -17,7 +17,7 @@ class SQLGenerationCrew:
         self.query_generator = QueryGeneratorAgent(model_name)
         self.query_validator = QueryValidatorAgent(model_name)
         self.query_executor = QueryExecutorAgent(model_name)
-        self.data_visualizer = DataVisualizerAgent(model_name)
+        # self.data_visualizer = DataVisualizerAgent(model_name)
         
     def set_mcp_client(self, db_client):
         """Set the database client for database operations."""
@@ -34,7 +34,7 @@ class SQLGenerationCrew:
                 "query_generation": {},
                 "query_validation": {},
                 "query_execution": {},
-                "data_visualization": {}
+                # "data_visualization": {}
             },
             "final_result": {}
         }
@@ -72,18 +72,18 @@ class SQLGenerationCrew:
                 }
             
             # Step 4: Create visualizations
-            print("📊 Creating visualizations...")
-            visualization_result = self.data_visualizer.visualize_data(
-                execution_result, user_query
-            )
-            pipeline_result["steps"]["data_visualization"] = visualization_result
+            # print("📊 Creating visualizations...")
+            # visualization_result = self.data_visualizer.visualize_data(
+            #     execution_result, user_query
+            # )
+            # pipeline_result["steps"]["data_visualization"] = visualization_result
             
             # Step 5: Format final response
-            try:
-                formatted_results = self.query_executor.format_results(execution_result)
-            except Exception as e:
-                print(f"⚠️ Error formatting results: {e}")
-                formatted_results = "Results formatting failed. Raw data available."
+            # try:
+            #     formatted_results = self.query_executor.format_results(execution_result)
+            # except Exception as e:
+            #     print(f"⚠️ Error formatting results: {e}")
+            #     formatted_results = "Results formatting failed. Raw data available."
             
             # Clean data by handling NaN values
             clean_data = self._clean_data_for_json(execution_result["data"])
@@ -95,8 +95,8 @@ class SQLGenerationCrew:
                 "columns": execution_result["columns"],
                 "row_count": execution_result["row_count"],
                 "execution_time": execution_result["execution_time"],
-                "formatted_summary": formatted_results,
-                "visualizations": visualization_result.get("visualizations", []),
+                # "formatted_summary": formatted_results,
+                # "visualizations": visualization_result.get("visualizations", []),
                 "validation_info": {
                     "confidence_score": validation_result["confidence_score"],
                     "warnings": validation_result["warnings"],

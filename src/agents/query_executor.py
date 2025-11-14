@@ -108,30 +108,30 @@ class QueryExecutorAgent:
                 "data": [["Query executed successfully"]]
             }
     
-    def format_results(self, results: Dict[str, Any]) -> str:
-        """Format query results for display."""
+    # def format_results(self, results: Dict[str, Any]) -> str:
+    #     """Format query results for display."""
         
-        if not results["success"]:
-            return f"Query execution failed: {results.get('error', 'Unknown error')}"
+    #     if not results["success"]:
+    #         return f"Query execution failed: {results.get('error', 'Unknown error')}"
         
-        task = Task(
-            description=f"""
-            Format the following query results for business users:
+    #     task = Task(
+    #         description=f"""
+    #         Format the following query results for business users:
             
-            Data: {results['data']}
-            Columns: {results['columns']}
-            Row Count: {results['row_count']}
-            Execution Time: {results['execution_time']} seconds
+    #         Data: {results['data']}
+    #         Columns: {results['columns']}
+    #         Row Count: {results['row_count']}
+    #         Execution Time: {results['execution_time']} seconds
             
-            Create a clear, readable summary that includes:
-            1. Brief description of what the data shows
-            2. Key insights or patterns
-            3. Properly formatted table or summary
-            4. Any notable observations
-            """,
-            expected_output="Well-formatted business summary of the query results",
-            agent=self.agent
-        )
+    #         Create a clear, readable summary that includes:
+    #         1. Brief description of what the data shows
+    #         2. Key insights or patterns
+    #         3. Properly formatted table or summary
+    #         4. Any notable observations
+    #         """,
+    #         expected_output="Well-formatted business summary of the query results",
+    #         agent=self.agent
+    #     )
         
         # Create a crew to execute the task
         crew = Crew(

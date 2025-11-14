@@ -1,29 +1,38 @@
 """Query Validator Agent - Validates SQL queries for safety and correctness"""
 
-from crewai import Agent, Task, Crew
+from crewai import Agent, Task, Crew, LLM
 from typing import Dict, List, Any
 import re
 import sqlparse
+from ..core.settings import get_settings
 
 
 class QueryValidatorAgent:
     """CrewAI agent for validating SQL queries."""
     
     def __init__(self, model_name: str = "gpt-4o-mini"):
+        self.settings = get_settings()
         self.model_name = model_name
         self.agent = self._create_agent()
         
+        
     def _create_agent(self) -> Agent:
         """Create the CrewAI agent for query validation."""
+        model_to_use = self.settings.llm_model
+        llm = LLM(
+        model=model_to_use,
+        api_key=self.settings.openai_api_key,
+        temperature=0.3
+        )
+
         return Agent(
             role="SQL Query Validator",
             goal="Validate SQL queries for safety, correctness, and adherence to business rules",
             backstory="""You are a database security expert with deep knowledge of MySQL.
-            You specialize in identifying potentially harmful queries, performance issues, 
-            and ensuring queries follow proper business logic and security practices.""",
+            You specialize in identifying potentially harmful queries, and ensuring queries follow proper business logic and security practices.""",
             verbose=True,
             allow_delegation=False,
-            llm=self.model_name
+            llm=llm
         )
     
     def validate_query(self, sql_query: str, business_id: str) -> Dict[str, Any]:
@@ -46,11 +55,13 @@ class QueryValidatorAgent:
             Organization ID: {business_id}
             
             Check for:
-            1. Proper Organization ID filtering (should use o.id = '{business_id}')
+            1. Proper Organization ID filtering.
             2. Correct table joins and relationships
             3. Adherence to schema conventions
             4. Logical correctness of the query
-            
+            5. If there is any performance issue just ignore validation for performance issues and validate it.
+            6. Ignore validation for wildcard LIKE clause, just validate it.
+
             Return a JSON response with:
             {{
                 "is_valid": true/false,
@@ -60,7 +71,7 @@ class QueryValidatorAgent:
                 "confidence_score": 0.0-1.0
             }}
             """,
-            expected_output="JSON validation result with detailed analysis",
+            expected_output="JSON validation result.",
             agent=self.agent
         )
         

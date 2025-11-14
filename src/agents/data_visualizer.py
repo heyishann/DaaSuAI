@@ -4,8 +4,6 @@ from crewai import Agent, Task, Crew
 from typing import Dict, List, Any, Optional
 import pandas as pd
 import matplotlib.pyplot as plt
-import plotly.graph_objects as go
-import plotly.express as px
 import json
 import base64
 from io import BytesIO
