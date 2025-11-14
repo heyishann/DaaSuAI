@@ -6,6 +6,8 @@ import asyncio
 from ..agents.query_generator import QueryGeneratorAgent
 from ..agents.query_validator import QueryValidatorAgent
 from ..agents.query_executor import QueryExecutorAgent
+from ..agents.intent_router import IntentRouterAgent
+from ..agents.general_response_agent import GeneralResponseAgent
 # from ..agents.data_visualizer import DataVisualizerAgent
 
 
@@ -14,9 +16,11 @@ class SQLGenerationCrew:
     
     def __init__(self, model_name: str = "gpt-4o-mini"):
         self.model_name = model_name
+        self.intent_router = IntentRouterAgent(model_name)
         self.query_generator = QueryGeneratorAgent(model_name)
         self.query_validator = QueryValidatorAgent(model_name)
         self.query_executor = QueryExecutorAgent(model_name)
+        self.general_responder = GeneralResponseAgent(model_name)
         # self.data_visualizer = DataVisualizerAgent(model_name)
         
     def set_mcp_client(self, db_client):
@@ -31,15 +35,43 @@ class SQLGenerationCrew:
             "user_query": user_query,
             "organization_id": business_id,
             "steps": {
+                "routing": {},
                 "query_generation": {},
                 "query_validation": {},
                 "query_execution": {},
+                "general_response": {},
                 # "data_visualization": {}
             },
             "final_result": {}
         }
         
         try:
+            # Step 0: route the user query
+            routing_decision = self.intent_router.classify_query(
+                user_query, additional_context
+            )
+            pipeline_result["steps"]["routing"] = routing_decision
+
+            if not routing_decision.get("is_database_query", True):
+                general_response = self.general_responder.answer_query(
+                    user_query, additional_context
+                )
+                pipeline_result["steps"]["general_response"] = general_response
+                pipeline_result["final_result"] = {
+                    "success": general_response.get("success", False),
+                    "response_type": "general_answer",
+                    "answer": general_response.get("answer"),
+                    "sql_query": None,
+                    "data": None,
+                    "columns": None,
+                    "row_count": None,
+                    "execution_time": None,
+                    "validation_info": None,
+                    "routing_decision": routing_decision,
+                    "error": general_response.get("error"),
+                }
+                return pipeline_result
+
             # Step 1: Generate SQL query with feedback loop
             sql_query, generation_attempts = await self._generate_query_with_feedback(
                 user_query, business_id, additional_context
@@ -90,11 +122,13 @@ class SQLGenerationCrew:
             
             pipeline_result["final_result"] = {
                 "success": True,
+                "response_type": "database_query",
                 "sql_query": sql_query,
                 "data": clean_data,
                 "columns": execution_result["columns"],
                 "row_count": execution_result["row_count"],
                 "execution_time": execution_result["execution_time"],
+                "routing_decision": routing_decision,
                 # "formatted_summary": formatted_results,
                 # "visualizations": visualization_result.get("visualizations", []),
                 "validation_info": {
@@ -111,17 +145,21 @@ class SQLGenerationCrew:
                 **pipeline_result,
                 "final_result": {
                     "success": False,
+                    "response_type": "database_query",
                     "error": f"Pipeline execution failed: {str(e)}",
-                    "details": {"error_type": type(e).__name__}
+                    "details": {"error_type": type(e).__name__},
+                    "routing_decision": pipeline_result["steps"].get("routing"),
                 }
             }
     
     def get_pipeline_status(self) -> Dict[str, str]:
         """Get the status of all pipeline components."""
         return {
+            "intent_router": "active",
             "query_generator": "active",
             "query_validator": "active", 
             "query_executor": "active" if hasattr(self.query_executor, 'mcp_client') and self.query_executor.mcp_client else "no_db_client",
+            "general_responder": "active",
             "data_visualizer": "active"
         }
     

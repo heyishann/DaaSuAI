@@ -815,7 +815,6 @@ FLOAT =\> F
 
 - id - V36 - PK
 - task_id - V36
-- sub_task_number - V100
 - title - V255
 - description - T
 - assigned_to - V36
@@ -831,9 +830,9 @@ FLOAT =\> F
 
 ### Sample Data
 
-| id        | task_id  | sub_task_number | title                 | assigned_to     | status_id      | start_date | created_by | is_active | is_deleted |
+| id        | task_id  | title                 | assigned_to     | status_id      | start_date | created_by | is_active | is_deleted |
 | :-------- | :------- | :-------------- | :-------------------- | :-------------- | :------------- | :--------- | :--------- | :-------- | :--------- |
-| subtask-1 | task-123 | STSK-001-01     | Clear excavation site | user-supervisor | status-pending | 2024-02-01 | user-789   | 1         | 0          |
+| subtask-1 | task-123 |  Clear excavation site | user-supervisor | status-pending | 2024-02-01 | user-789   | 1         | 0          |
 
 ---
 

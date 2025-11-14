@@ -24,6 +24,9 @@ class QueryResponse(BaseModel):
     user_query: str
     business_id: str
     sql_query: Optional[str] = None
+    response_type: Optional[str] = None
+    answer: Optional[str] = None
+    routing_decision: Optional[Dict[str, Any]] = None
     data: Optional[List] = None
     columns: Optional[List[str]] = None
     row_count: Optional[int] = None
@@ -145,6 +148,9 @@ async def process_query(request: QueryRequest):
             user_query=request.query,
             business_id=request.business_id,
             sql_query=final_result.get("sql_query"),
+            response_type=final_result.get("response_type"),
+            answer=final_result.get("answer"),
+            routing_decision=final_result.get("routing_decision"),
             data=final_result.get("data"),
             columns=final_result.get("columns"),
             row_count=final_result.get("row_count"),

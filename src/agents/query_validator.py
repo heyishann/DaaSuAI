@@ -61,6 +61,7 @@ class QueryValidatorAgent:
             4. Logical correctness of the query
             5. If there is any performance issue just ignore validation for performance issues and validate it.
             6. Ignore validation for wildcard LIKE clause, just validate it.
+            7. Organization ID is always correct.
 
             Return a JSON response with:
             {{

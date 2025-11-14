@@ -83,6 +83,7 @@ class QueryGeneratorAgent:
             5. Aggregation Safety: When using aggregate functions (like SUM, COUNT, AVG), always wrap the function in COALESCE to ensure 0 is returned instead of NULL for empty sets.
             Example: COALESCE(SUM(t.hours), 0) AS total_hours
             6. Do not assume string as a integer or integer as a string. "Pankaj", "Sophia", "Adarsh" this all are the names not the id.
+            7. Also use UNION when needed if user asks two different queries at a time.
 
             Filtering Logic (WHERE Clauses)
             1. Mandatory Organization Filter: Every query must include a WHERE clause to filter data by the organization ID. Use the exact placeholder {business_id} for this.

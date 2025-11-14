@@ -349,7 +349,7 @@
                             class="business-id-input" 
                             id="businessId" 
                             placeholder="Business ID" 
-                            value="46b1b99c-6930-4a77-bff7-b75440ef17ef"
+                            value="f924d155-23cf-44f9-a184-7f1e46ae9139"
                             required
                         >
                         <input 
@@ -498,148 +498,145 @@
             console.log(result)
             const messageDiv = document.createElement('div');
             messageDiv.className = 'message bot-message';
-            
-            // Store SQL in a data attribute for safe access
-            const sqlQueryId = `sql-${Date.now()}`;
-            window[sqlQueryId] = result.sql_query;
-            
+
+            const responseType = result.response_type || (result.sql_query ? 'database_query' : 'general_answer');
             let html = `
-                <strong> Query Results</strong>`;
-            
-            // Show feedback loop information if used
-            // if (result.pipeline_steps && result.pipeline_steps.query_generation && 
-            //     result.pipeline_steps.query_generation.feedback_used) {
-            //     const attempts = result.pipeline_steps.query_generation.attempts.length;
-            //     html += `
-            //     <div style="background: #e8f5e8; border: 1px solid #27ae60; padding: 10px; margin: 10px 0; border-radius: 5px; font-size: 12px;">
-            //         <strong> Query Improvement:</strong> Query was refined ${attempts} times using validator feedback for better performance and accuracy.
-            //     </div>`;
-            // }
-                
-            // html += `
-            //     <div class="sql-query" style="position: relative;">
-            //         <strong>Generated SQL:</strong>
-            //         <button class="copy-btn" id="copy-${sqlQueryId}"
-            //                 style="position: absolute; right: 10px; top: 5px; 
-            //                        background: #27ae60; color: white; border: none; 
-            //                        padding: 5px 10px; border-radius: 3px; cursor: pointer;
-            //                        font-size: 12px;">
-            //              Copy SQL
-            //         </button>
-            //         <br>
-            //         <pre style="margin-top: 10px;">${escapeHtml(result.sql_query)}</pre>
-            //     </div>
-            // `;
+                <strong>${responseType === 'database_query' ? ' Query Results' : ' Assistant Response'}</strong>`;
 
-            // // Add metrics
-            // if (result.row_count !== undefined) {
-            //     html += `
-            //         <div class="metrics">
-            //             <div class="metric">
-            //                 <div class="metric-value">${result.row_count}</div>
-            //                 <div class="metric-label">Rows Returned</div>
-            //             </div>
-            //             <div class="metric">
-            //                 <div class="metric-value">${result.execution_time?.toFixed(2) || 'N/A'}</div>
-            //                 <div class="metric-label">Execution Time (s)</div>
-            //             </div>
-            //             <div class="metric">
-            //                 <div class="metric-value">${result.validation_info?.confidence_score ? (result.validation_info.confidence_score * 100).toFixed(0) + '%' : 'N/A'}</div>
-            //                 <div class="metric-label">Confidence</div>
-            //             </div>
-            //         </div>
-            //     `;
-            // }
+            if (responseType === 'general_answer') {
+                const answerText = result.answer || 'I was not able to craft a response for that.';
+                html += `<p style="margin-top: 10px; line-height: 1.5;">${escapeHtml(answerText)}</p>`;
 
-            // Add data table
-            if (result.data && result.data.length > 0) {
-                html += '<div class="data-table">';
-                html += '<table>';
-                
-                // Header
-                html += '<thead><tr>';
-                result.columns.forEach(col => {
-                    html += `<th>${escapeHtml(col)}</th>`;
-                });
-                html += '</tr></thead>';
-                
-                // Data (limit to first 10 rows for display)
-                html += '<tbody>';
-                const displayRows = result.data.slice(0, 10);
-                displayRows.forEach(row => {
-                    html += '<tr>';
-                    row.forEach(cell => {
-                        html += `<td>${escapeHtml(String(cell))}</td>`;
-                    });
-                    html += '</tr>';
-                });
-                html += '</tbody>';
-                html += '</table>';
-                
-                if (result.data.length > 10) {
-                    html += `<p style="text-align: center; margin-top: 10px; color: #666;">
-                        Showing first 10 of ${result.row_count} rows
-                    </p>`;
+                // if (result.routing_decision?.reason) {
+                //     html += `<div class="status success" style="margin-top: 10px;">
+                //         Routed to assistant because: ${escapeHtml(result.routing_decision.reason)}
+                //     </div>`;
+                // }
+
+                // if (typeof result.routing_decision?.confidence === 'number') {
+                //     html += `<p style="font-size: 12px; color: #6c757d; margin-top: 5px;">
+                //         Routing confidence: ${(result.routing_decision.confidence * 100).toFixed(0)}%
+                //     </p>`;
+                // }
+            } else {
+                if (result.sql_query) {
+                    const sqlQueryId = `sql-${Date.now()}`;
+                    window[sqlQueryId] = result.sql_query;
+                    html += `
+                        <div class="sql-query" style="position: relative;">
+                            <strong>Generated SQL:</strong>
+                            <button class="copy-btn" id="copy-${sqlQueryId}"
+                                    style="position: absolute; right: 10px; top: 5px; 
+                                           background: #27ae60; color: white; border: none; 
+                                           padding: 5px 10px; border-radius: 3px; cursor: pointer;
+                                           font-size: 12px;">
+                                 Copy SQL
+                            </button>
+                            <br>
+                            <pre style="margin-top: 10px;">${escapeHtml(result.sql_query)}</pre>
+                        </div>
+                    `;
+
+                    setTimeout(() => {
+                        const copyBtn = document.getElementById(`copy-${sqlQueryId}`);
+                        if (copyBtn) {
+                            copyBtn.addEventListener('click', () => {
+                                copySQL(window[sqlQueryId]);
+                            });
+                        }
+                    }, 10);
                 }
-                
-                html += '</div>';
-            }
 
+                if (result.row_count !== undefined) {
+                    html += `
+                        <div class="metrics">
+                            <div class="metric">
+                                <div class="metric-value">${result.row_count}</div>
+                                <div class="metric-label">Rows Returned</div>
+                            </div>
+                            <div class="metric">
+                                <div class="metric-value">${result.execution_time?.toFixed(2) || 'N/A'}</div>
+                                <div class="metric-label">Execution Time (s)</div>
+                            </div>
+                            <div class="metric">
+                                <div class="metric-value">${result.validation_info?.confidence_score ? (result.validation_info.confidence_score * 100).toFixed(0) + '%' : 'N/A'}</div>
+                                <div class="metric-label">Validation Confidence</div>
+                            </div>
+                        </div>
+                    `;
+                }
 
-            // Add visualization
-            if (result.visualizations && result.visualizations.length > 0) {
-                result.visualizations.forEach((viz, index) => {
-                    const uniqueId = `chart-${Date.now()}-${index}`;
-                    html += `<div class="visualization" id="viz-${uniqueId}">`;
-                    html += `<h4> ${viz.config?.title || 'Data Visualization'}</h4>`;
-                    if (viz.type === 'table') {
-                        html += viz.data;
-                    } else if (viz.data.startsWith("data:image")) {
-                        html += `<img src="${viz.data}" alt="${viz.config?.title || 'Chart'}" style="max-width:100%; height:auto;" />`;
-                    } else {
-                        html += `<div id="${uniqueId}" style="height: 400px;"></div>`;
-                        setTimeout(() => {
-                            try {
-                                const chartData = JSON.parse(viz.data);
-                                Plotly.newPlot(uniqueId, chartData.data, chartData.layout);
-                            } catch (e) {
-                                console.error('Error rendering chart:', e);
-                            }
-                        }, 100);
+                if (result.data && result.data.length > 0) {
+                    html += '<div class="data-table">';
+                    html += '<table>';
+                    html += '<thead><tr>';
+                    result.columns.forEach(col => {
+                        html += `<th>${escapeHtml(col)}</th>`;
+                    });
+                    html += '</tr></thead>';
+                    html += '<tbody>';
+                    const displayRows = result.data.slice(0, 10);
+                    displayRows.forEach(row => {
+                        html += '<tr>';
+                        row.forEach(cell => {
+                            html += `<td>${escapeHtml(String(cell))}</td>`;
+                        });
+                        html += '</tr>';
+                    });
+                    html += '</tbody>';
+                    html += '</table>';
+
+                    if (result.data.length > 10) {
+                        html += `<p style="text-align: center; margin-top: 10px; color: #666;">
+                            Showing first 10 of ${result.row_count} rows
+                        </p>`;
                     }
-                    html += `<p style="margin-top: 10px; font-size: 12px; color: #666;">${viz.summary}</p>`;
+
                     html += '</div>';
-                });
+                }
+
+                if (result.visualizations && result.visualizations.length > 0) {
+                    result.visualizations.forEach((viz, index) => {
+                        const uniqueId = `chart-${Date.now()}-${index}`;
+                        html += `<div class="visualization" id="viz-${uniqueId}">`;
+                        html += `<h4> ${viz.config?.title || 'Data Visualization'}</h4>`;
+                        if (viz.type === 'table') {
+                            html += viz.data;
+                        } else if (viz.data.startsWith("data:image")) {
+                            html += `<img src="${viz.data}" alt="${viz.config?.title || 'Chart'}" style="max-width:100%; height:auto;" />`;
+                        } else {
+                            html += `<div id="${uniqueId}` + `" style="height: 400px;"></div>`;
+                            setTimeout(() => {
+                                try {
+                                    const chartData = JSON.parse(viz.data);
+                                    Plotly.newPlot(uniqueId, chartData.data, chartData.layout);
+                                } catch (e) {
+                                    console.error('Error rendering chart:', e);
+                                }
+                            }, 100);
+                        }
+                        html += `<p style="margin-top: 10px; font-size: 12px; color: #666;">${viz.summary}</p>`;
+                        html += '</div>';
+                    });
+                }
+
+                if (result.pipeline_steps?.insights_generation?.insights) {
+                    html += `<div style="margin-top: 15px; padding: 10px; background: #fffbe6; border-radius: 5px; border: 1px solid #ffe58f;">
+                        <strong> Insights:</strong><br>
+                        <span style="font-size: 15px; color: #7c6f00;">
+                            ${escapeHtml(result.pipeline_steps.insights_generation.insights)}
+                        </span>
+                    </div>`;
+                }
+
+                if (result.pipeline_steps?.recommendations_generation?.recommendations) {
+                    html += `<div style="margin-top: 15px; padding: 10px; background: #e6f7ff; border-radius: 5px; border: 1px solid #91d5ff;">
+                        <strong> Recommendations:</strong><br>
+                        <span style="font-size: 15px; color: #0050b3;">${escapeHtml(result.pipeline_steps.recommendations_generation.recommendations)}</span>
+                    </div>`;
+                }
             }
 
-
-            // Add narrative insights
-            if (result.pipeline_steps?.insights_generation?.insights) {
-                html += `<div style="margin-top: 15px; padding: 10px; background: #fffbe6; border-radius: 5px; border: 1px solid #ffe58f;">
-                    <strong> Insights:</strong><br>
-                    <span style="font-size: 15px; color: #7c6f00;">
-                        ${escapeHtml(result.pipeline_steps.insights_generation.insights)}
-                    </span>
-                </div>`;
-            }
-
-            // Add recommendations
-            if (result.pipeline_steps.recommendations_generation && result.pipeline_steps.recommendations_generation.recommendations) {
-                html += `<div style="margin-top: 15px; padding: 10px; background: #e6f7ff; border-radius: 5px; border: 1px solid #91d5ff;">
-                    <strong> Recommendations:</strong><br>
-                    <span style="font-size: 15px; color: #0050b3;">${escapeHtml(result.pipeline_steps.recommendations_generation.recommendations)}</span>
-                </div>`;
-            }
-
-            // Add formatted summary
-            // if (result.formatted_summary) {
-            //     html += `<div style="margin-top: 15px; padding: 10px; background: #f8f9fa; border-radius: 5px;">
-            //         <strong> Summary:</strong><br>
-            //         ${escapeHtml(result.formatted_summary)}
-            //     </div>`;
-            // }
-
-            // Remove chat loader message if present
             const oldLoader = document.getElementById('chatLoaderMsg');
             if (oldLoader) {
                 oldLoader.remove();
@@ -647,16 +644,6 @@
             messageDiv.innerHTML = html;
             addMessageElement(messageDiv);
             setLoading(false);
-            
-            // Attach click event to copy button after element is added to DOM
-            setTimeout(() => {
-                const copyBtn = document.getElementById(`copy-${sqlQueryId}`);
-                if (copyBtn) {
-                    copyBtn.addEventListener('click', () => {
-                        copySQL(window[sqlQueryId]);
-                    });
-                }
-            }, 10);
         }
 
         // Display error result
