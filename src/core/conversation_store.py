@@ -27,11 +27,21 @@ class ConversationStore:
         if not session_id:
             return
 
+        response_payload = final_result.get("answer")
+        if response_payload is None and final_result.get("response_type") == "database_query":
+            response_payload = final_result.get("data")
+
+        if isinstance(response_payload, (dict, list)):
+            try:
+                response_payload = json.dumps(response_payload)
+            except (TypeError, ValueError):
+                response_payload = str(response_payload)
+
         payload = {
             "session_id": session_id,
             "user_query": user_query,
             "response_type": final_result.get("response_type", "unknown"),
-            "response_text": final_result.get("answer"),
+            "response_text": response_payload,
             "sql_query": final_result.get("sql_query"),
             "metadata": metadata or {},
             "created_at": datetime.utcnow().isoformat(),
@@ -100,10 +110,10 @@ class ConversationStore:
             CREATE TABLE IF NOT EXISTS {self.table_name} (
                 id BIGINT AUTO_INCREMENT PRIMARY KEY,
                 session_id VARCHAR(128) NOT NULL,
-                user_query TEXT NOT NULL,
-                response_type VARCHAR(32) NOT NULL,
-                response_text MEDIUMTEXT NULL,
-                sql_query MEDIUMTEXT NULL,
+                user_query JSON NULL,
+                response_type JSON NULL,
+                response_text JSON NULL,
+                sql_query JSON NULL,
                 metadata JSON NULL,
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                 INDEX idx_session_id_created_at (session_id, created_at)
