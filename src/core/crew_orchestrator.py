@@ -8,6 +8,7 @@ from ..agents.query_validator import QueryValidatorAgent
 from ..agents.query_executor import QueryExecutorAgent
 from ..agents.intent_router import IntentRouterAgent
 from ..agents.general_response_agent import GeneralResponseAgent
+from ..core.conversation_store import ConversationStore
 # from ..agents.data_visualizer import DataVisualizerAgent
 
 
@@ -21,20 +22,24 @@ class SQLGenerationCrew:
         self.query_validator = QueryValidatorAgent(model_name)
         self.query_executor = QueryExecutorAgent(model_name)
         self.general_responder = GeneralResponseAgent(model_name)
+        self.conversation_store: Optional[ConversationStore] = None
         # self.data_visualizer = DataVisualizerAgent(model_name)
         
     def set_mcp_client(self, db_client):
         """Set the database client for database operations."""
         self.query_executor.set_mcp_client(db_client)
+        self.conversation_store = ConversationStore(db_client)
     
-    async def process_user_query(self, user_query: str, business_id: str, 
-                                additional_context: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
+    async def process_user_query(self, user_query: str, business_id: str,
+                                 session_id: Optional[str] = None,
+                                 additional_context: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
         """Process a complete user query through the entire pipeline."""
         
         pipeline_result = {
             "user_query": user_query,
             "organization_id": business_id,
             "steps": {
+                "context": {},
                 "routing": {},
                 "query_generation": {},
                 "query_validation": {},
@@ -46,15 +51,25 @@ class SQLGenerationCrew:
         }
         
         try:
+            conversation_context = None
+            if session_id and self.conversation_store:
+                conversation_context = await self.conversation_store.fetch_last_entry(session_id)
+                pipeline_result["steps"]["context"] = {
+                    "session_id": session_id,
+                    "previous_message": conversation_context
+                }
+
+            enriched_context = self._merge_context(additional_context, conversation_context)
+
             # Step 0: route the user query
             routing_decision = self.intent_router.classify_query(
-                user_query, additional_context
+                user_query, enriched_context
             )
             pipeline_result["steps"]["routing"] = routing_decision
 
             if not routing_decision.get("is_database_query", True):
                 general_response = self.general_responder.answer_query(
-                    user_query, additional_context
+                    user_query, enriched_context
                 )
                 pipeline_result["steps"]["general_response"] = general_response
                 pipeline_result["final_result"] = {
@@ -70,11 +85,12 @@ class SQLGenerationCrew:
                     "routing_decision": routing_decision,
                     "error": general_response.get("error"),
                 }
+                await self._persist_conversation(session_id, user_query, pipeline_result["final_result"])
                 return pipeline_result
 
             # Step 1: Generate SQL query with feedback loop
             sql_query, generation_attempts = await self._generate_query_with_feedback(
-                user_query, business_id, additional_context
+                user_query, business_id, enriched_context
             )
             
             # Store generation details
@@ -137,6 +153,7 @@ class SQLGenerationCrew:
                     "suggestions": validation_result["suggestions"]
                 }
             }
+            await self._persist_conversation(session_id, user_query, pipeline_result["final_result"])
             
             return pipeline_result
             
@@ -176,6 +193,39 @@ class SQLGenerationCrew:
             "status": status,
             "issues": issues
         }
+
+    def _merge_context(self, incoming_context: Optional[Dict[str, Any]], previous_message: Optional[Dict[str, Any]]):
+        """Combine provided context with the previous conversation turn."""
+        if not previous_message:
+            return incoming_context
+
+        merged = incoming_context.copy() if incoming_context else {}
+        merged["previous_message"] = {
+            "user_query": previous_message.get("user_query"),
+            "response_type": previous_message.get("response_type"),
+            "response_text": previous_message.get("response_text"),
+            "sql_query": previous_message.get("sql_query"),
+            "metadata": previous_message.get("metadata", {}),
+        }
+        return merged
+
+    async def _persist_conversation(self, session_id: Optional[str], user_query: str, final_result: Dict[str, Any]):
+        """Store the interaction for future context."""
+        if not self.conversation_store:
+            return
+
+        metadata = {
+            "routing_decision": final_result.get("routing_decision"),
+            "row_count": final_result.get("row_count"),
+            "execution_time": final_result.get("execution_time"),
+        }
+
+        await self.conversation_store.save_entry(
+            session_id=session_id,
+            user_query=user_query,
+            final_result=final_result,
+            metadata={k: v for k, v in metadata.items() if v is not None},
+        )
     
     def _clean_data_for_json(self, data):
         """Clean data by replacing NaN values with None for JSON serialization."""

@@ -372,6 +372,19 @@
         // Global variables
         let isProcessing = false;
 
+        // Session management (new session per page load)
+        function createSessionId() {
+            try {
+                if (crypto.randomUUID) {
+                    return crypto.randomUUID();
+                }
+            } catch (error) {
+                // fall through
+            }
+            return `session-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+        }
+        const sessionId = createSessionId();
+
         // DOM elements
         const messagesContainer = document.getElementById('messages');
         const queryForm = document.getElementById('queryForm');
@@ -472,7 +485,8 @@
                     },
                     body: JSON.stringify({
                         query: query,
-                        business_id: businessId
+                        business_id: businessId,
+                        session_id: sessionId
                     })
                 });
 
@@ -519,51 +533,55 @@
                 //     </p>`;
                 // }
             } else {
-                if (result.sql_query) {
-                    const sqlQueryId = `sql-${Date.now()}`;
-                    window[sqlQueryId] = result.sql_query;
-                    html += `
-                        <div class="sql-query" style="position: relative;">
-                            <strong>Generated SQL:</strong>
-                            <button class="copy-btn" id="copy-${sqlQueryId}"
-                                    style="position: absolute; right: 10px; top: 5px; 
-                                           background: #27ae60; color: white; border: none; 
-                                           padding: 5px 10px; border-radius: 3px; cursor: pointer;
-                                           font-size: 12px;">
-                                 Copy SQL
-                            </button>
-                            <br>
-                            <pre style="margin-top: 10px;">${escapeHtml(result.sql_query)}</pre>
-                        </div>
-                    `;
+                // if (result.sql_query) {
+                //     const sqlQueryId = `sql-${Date.now()}`;
+                //     window[sqlQueryId] = result.sql_query;
+                //     html += `
+                //         <div class="sql-query" style="position: relative;">
+                //             <strong>Generated SQL:</strong>
+                //             <button class="copy-btn" id="copy-${sqlQueryId}"
+                //                     style="position: absolute; right: 10px; top: 5px; 
+                //                            background: #27ae60; color: white; border: none; 
+                //                            padding: 5px 10px; border-radius: 3px; cursor: pointer;
+                //                            font-size: 12px;">
+                //                  Copy SQL
+                //             </button>
+                //             <br>
+                //             <pre style="margin-top: 10px;">${escapeHtml(result.sql_query)}</pre>
+                //         </div>
+                //     `;
 
-                    setTimeout(() => {
-                        const copyBtn = document.getElementById(`copy-${sqlQueryId}`);
-                        if (copyBtn) {
-                            copyBtn.addEventListener('click', () => {
-                                copySQL(window[sqlQueryId]);
-                            });
-                        }
-                    }, 10);
-                }
+                //     setTimeout(() => {
+                //         const copyBtn = document.getElementById(`copy-${sqlQueryId}`);
+                //         if (copyBtn) {
+                //             copyBtn.addEventListener('click', () => {
+                //                 copySQL(window[sqlQueryId]);
+                //             });
+                //         }
+                //     }, 10);
+                // }
 
-                if (result.row_count !== undefined) {
-                    html += `
-                        <div class="metrics">
-                            <div class="metric">
-                                <div class="metric-value">${result.row_count}</div>
-                                <div class="metric-label">Rows Returned</div>
-                            </div>
-                            <div class="metric">
-                                <div class="metric-value">${result.execution_time?.toFixed(2) || 'N/A'}</div>
-                                <div class="metric-label">Execution Time (s)</div>
-                            </div>
-                            <div class="metric">
-                                <div class="metric-value">${result.validation_info?.confidence_score ? (result.validation_info.confidence_score * 100).toFixed(0) + '%' : 'N/A'}</div>
-                                <div class="metric-label">Validation Confidence</div>
-                            </div>
-                        </div>
-                    `;
+                // if (result.row_count !== undefined) {
+                //     html += `
+                //         <div class="metrics">
+                //             <div class="metric">
+                //                 <div class="metric-value">${result.row_count}</div>
+                //                 <div class="metric-label">Rows Returned</div>
+                //             </div>
+                //             <div class="metric">
+                //                 <div class="metric-value">${result.execution_time?.toFixed(2) || 'N/A'}</div>
+                //                 <div class="metric-label">Execution Time (s)</div>
+                //             </div>
+                //             <div class="metric">
+                //                 <div class="metric-value">${result.validation_info?.confidence_score ? (result.validation_info.confidence_score * 100).toFixed(0) + '%' : 'N/A'}</div>
+                //                 <div class="metric-label">Validation Confidence</div>
+                //             </div>
+                //         </div>
+                //     `;
+                // }
+
+                if (result.data.length == 0){
+                    html+=`<div> No data Available</div`;
                 }
 
                 if (result.data && result.data.length > 0) {

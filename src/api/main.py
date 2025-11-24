@@ -17,6 +17,7 @@ from ..core.mcp_client import MCPClient
 class QueryRequest(BaseModel):
     query: str
     business_id: str
+    session_id: Optional[str] = None
     additional_context: Optional[Dict[str, Any]] = None
 
 class QueryResponse(BaseModel):
@@ -137,6 +138,7 @@ async def process_query(request: QueryRequest):
         result = await sql_crew.process_user_query(
             request.query,
             request.business_id,
+            request.session_id,
             request.additional_context
         )
         
@@ -228,6 +230,7 @@ async def websocket_chat(websocket: WebSocket):
             
             query = data.get("query", "")
             business_id = data.get("business_id", "")
+            session_id = data.get("session_id")
             
             if not query or not business_id:
                 await websocket.send_json({
@@ -242,7 +245,7 @@ async def websocket_chat(websocket: WebSocket):
             })
             
             # Process the query
-            result = await sql_crew.process_user_query(query, business_id)
+            result = await sql_crew.process_user_query(query, business_id, session_id)
             
             # Send the result
             await websocket.send_json({

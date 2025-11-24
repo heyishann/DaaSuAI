@@ -125,7 +125,8 @@ curl -X POST "http://localhost:8000/api/query" \
      -H "Content-Type: application/json" \
      -d '{
        "query": "Show me top performing employees this month",
-       "business_id": "demo-business-123"
+       "business_id": "demo-business-123",
+       "session_id": "user-session-1"
      }'
 ```
 
@@ -259,6 +260,32 @@ The system can handle various business intelligence queries:
 "Show customer retention rates"
 "List new customers this month"
 "Customer lifetime value analysis"
+```
+
+## 🧠 Session Context & Conversation Memory
+
+Pass a `session_id` with each request (the UI does this automatically) to persist the conversation in a `conversation_history` table. The system will:
+
+- Store the user query, generated SQL/answer, routing decision, and metadata for every turn.
+- Automatically load the most recent exchange for that session and include it as context for follow-up prompts (e.g., "List them").
+- Fall back to in-memory storage when a database connection is unavailable.
+
+The built-in chat UI now generates a fresh session ID every time the page loads (or reloads). Keep the tab open if you want follow-up prompts to reuse context, or pass a custom `session_id` via the API to control sessions manually.
+
+The table is created automatically on startup if it doesn't exist:
+
+```sql
+CREATE TABLE IF NOT EXISTS conversation_history (
+  id BIGINT AUTO_INCREMENT PRIMARY KEY,
+  session_id VARCHAR(128) NOT NULL,
+  user_query TEXT NOT NULL,
+  response_type VARCHAR(32) NOT NULL,
+  response_text MEDIUMTEXT NULL,
+  sql_query MEDIUMTEXT NULL,
+  metadata JSON NULL,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  INDEX idx_session_id_created_at (session_id, created_at)
+);
 ```
 
 ## 🛡️ Security Features

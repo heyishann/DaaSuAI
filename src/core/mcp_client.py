@@ -95,6 +95,49 @@ class MCPClient:
                 "data": None,
                 "query": sql_query
             }
+
+    async def execute_write(self, sql: str, params: Optional[tuple] = None, timeout: int = 30) -> Dict[str, Any]:
+        """Execute INSERT/UPDATE/DDL statements."""
+        if not self.connected or not self.pool:
+            return {
+                "success": False,
+                "error": "Database client not connected",
+            }
+
+        try:
+            async with self.pool.acquire() as conn:
+                async with conn.cursor() as cur:
+                    await asyncio.wait_for(cur.execute(sql, params), timeout=timeout)
+            return {"success": True}
+        except Exception as e:
+            return {
+                "success": False,
+                "error": str(e),
+            }
+
+    async def fetch_one(self, sql: str, params: Optional[tuple] = None, timeout: int = 30) -> Optional[Dict[str, Any]]:
+        """Fetch a single row as dict."""
+        rows = await self.fetch_all(sql, params=params, timeout=timeout, limit=1)
+        return rows[0] if rows else None
+
+    async def fetch_all(
+        self,
+        sql: str,
+        params: Optional[tuple] = None,
+        timeout: int = 30,
+        limit: Optional[int] = None,
+    ) -> List[Dict[str, Any]]:
+        """Fetch rows as list of dicts."""
+        if not self.connected or not self.pool:
+            return []
+
+        async with self.pool.acquire() as conn:
+            async with conn.cursor(aiomysql.DictCursor) as cur:
+                await asyncio.wait_for(cur.execute(sql, params), timeout=timeout)
+                rows = await cur.fetchall()
+                if limit is not None:
+                    rows = rows[:limit]
+                return rows
     
     async def _simulate_query_execution(self, sql_query: str) -> Dict[str, Any]:
         """Simulate query execution for demo purposes when no DB is connected."""
