@@ -3,9 +3,9 @@
 from .query_generator import QueryGeneratorAgent
 from .query_validator import QueryValidatorAgent
 from .query_executor import QueryExecutorAgent
-from .data_visualizer import DataVisualizerAgent
 from .intent_router import IntentRouterAgent
 from .general_response_agent import GeneralResponseAgent
+from .summary_agent import SummaryAgent
 
 __all__ = [
     "QueryGeneratorAgent",
@@ -14,4 +14,5 @@ __all__ = [
     "DataVisualizerAgent",
     "IntentRouterAgent",
     "GeneralResponseAgent",
+    "SummaryAgent",
 ]

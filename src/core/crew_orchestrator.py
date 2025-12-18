@@ -9,6 +9,7 @@ from ..agents.query_executor import QueryExecutorAgent
 from ..agents.intent_router import IntentRouterAgent
 from ..agents.general_response_agent import GeneralResponseAgent
 from ..core.conversation_store import ConversationStore
+from ..agents.summary_agent import SummaryAgent
 # from ..agents.data_visualizer import DataVisualizerAgent
 
 
@@ -23,6 +24,7 @@ class SQLGenerationCrew:
         self.query_executor = QueryExecutorAgent(model_name)
         self.general_responder = GeneralResponseAgent(model_name)
         self.conversation_store: Optional[ConversationStore] = None
+        self.summary_agent = SummaryAgent(model_name)
         # self.data_visualizer = DataVisualizerAgent(model_name)
         
     def set_mcp_client(self, db_client):
@@ -45,7 +47,7 @@ class SQLGenerationCrew:
                 "query_validation": {},
                 "query_execution": {},
                 "general_response": {},
-                # "data_visualization": {}
+                "summarization": {},
             },
             "final_result": {}
         }
@@ -114,10 +116,23 @@ class SQLGenerationCrew:
                     **pipeline_result,
                     "final_result": {
                         "success": False,
-                        "error": "Query execution failed",
+                        "error": "Error executing your query. Please review and edit your prompt before trying again.",
                         "details": execution_result
                     }
                 }
+
+            print("📝 Summarizing results...")
+            try:
+                summary_text = self.summary_agent.summarize(
+                    user_query, 
+                    execution_result["data"], 
+                    execution_result["columns"]
+                )
+            except Exception as e:
+                print(f"⚠️ Summarization failed: {e}")
+                summary_text = "Error generating summary."
+            
+            pipeline_result["steps"]["summarization"] = {"summary": summary_text}
             
             # Step 4: Create visualizations
             # print("📊 Creating visualizations...")

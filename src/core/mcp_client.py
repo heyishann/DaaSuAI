@@ -91,7 +91,7 @@ class MCPClient:
         except Exception as e:
             return {
                 "success": False,
-                "error": f"Query execution failed ==103==mcp : {str(e)}",
+                "error": f"Error executing your query. Please review and edit your prompt before trying again. : {str(e)}",
                 "data": None,
                 "query": sql_query
             }

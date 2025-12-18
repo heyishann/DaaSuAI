@@ -63,7 +63,10 @@ class ConversationStore:
                 payload["sql_query"],
                 json_metadata,
             )
-            await self.db_client.execute_write(sql, params)
+            result = await self.db_client.execute_write(sql, params)
+            # Fallback to in-memory store if DB write fails for any reason
+            if isinstance(result, dict) and not result.get("success", False):
+                self._fallback_memory[session_id] = payload
         else:
             self._fallback_memory[session_id] = payload
 
@@ -110,11 +113,11 @@ class ConversationStore:
             CREATE TABLE IF NOT EXISTS {self.table_name} (
                 id BIGINT AUTO_INCREMENT PRIMARY KEY,
                 session_id VARCHAR(128) NOT NULL,
-                user_query JSON NULL,
-                response_type JSON NULL,
-                response_text JSON NULL,
-                sql_query JSON NULL,
-                metadata JSON NULL,
+                user_query LONGTEXT NOT NULL,
+                response_type LONGTEXT NULL,
+                response_text LONGTEXT NULL,
+                sql_query LONGTEXT NULL,
+                metadata LONGTEXT NULL,
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                 INDEX idx_session_id_created_at (session_id, created_at)
             ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;

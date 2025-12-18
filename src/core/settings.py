@@ -12,7 +12,7 @@ class Settings(BaseSettings):
     # Database settings (MySQL)
     mysql_host: str = "localhost"
     mysql_port: int = 3306
-    mysql_db: str = "daasu"
+    mysql_db: str = "daasureturn"
     mysql_user: str = "root"
     mysql_password: str = ""
     
